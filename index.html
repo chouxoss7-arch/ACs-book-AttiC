@@ -55,7 +55,7 @@
 
       <div class="admin-only flex flex-wrap gap-2.5 justify-center mt-3">
         <button onclick="openBatchEditModal()" class="text-sm bg-amber-800 hover:bg-amber-900 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5">
-          ✍️ 批次管理 (書名/作者/風格)
+          ✍️ 批次管理 (書名/作者/風格/狀態)
         </button>
         <button onclick="openGenreModal()" class="text-sm bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold px-3.5 py-2.5 rounded-xl transition">
           🏷️ 風格/題材管理
@@ -203,7 +203,7 @@
           </div>
         </div>
 
-        <!-- 表頭標題列 (字體明顯放大，比書名更清晰醒目) -->
+        <!-- 表頭標題列 -->
         <div class="hidden lg:grid grid-cols-12 gap-3 px-4 py-3.5 text-base sm:text-lg font-black text-amber-950 bg-amber-100/70 rounded-2xl border border-amber-200/90 mb-3 items-center shadow-sm">
           <div class="col-span-1 flex items-center justify-center gap-2 text-center">
             <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" class="admin-only rounded text-amber-700 cursor-pointer w-5 h-5" title="全選本頁">
@@ -245,7 +245,7 @@
         <button id="timerPauseBtn" onclick="togglePauseTimer()" class="text-sm bg-stone-800 hover:bg-stone-700 text-amber-200 px-4 py-2 rounded-xl transition font-medium">
           ⏸ 暫停
         </button>
-        <button onclick="stopAndSaveTimer()" class="text-sm bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-xl transition font-bold shadow-md">
+        <button onclick="stopAndSaveTimer()" class="text-sm bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl transition font-bold shadow-md">
           ⏹ 結束本次閱讀並累積
         </button>
       </div>
@@ -337,12 +337,12 @@
     </div>
   </div>
 
-  <!-- ✍️ 批次管理與編輯彈窗 -->
+  <!-- ✍️ 批次管理與編輯彈窗 (已加入 Status 狀態批次修改) -->
   <div id="batchEditModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl max-h-[90vh] flex flex-col">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-start mb-3">
         <div>
-          <h3 class="text-xl sm:text-2xl font-bold text-stone-800">✍️ 批次管理書籍 (Title / Author / Genre / Format)</h3>
+          <h3 class="text-xl sm:text-2xl font-bold text-stone-800">✍️ 批次管理書籍 (Title / Author / Genre / Format / Status)</h3>
           <p class="text-sm text-stone-500 mt-1">直接在表格中修改，按 <kbd class="px-1.5 py-0.5 bg-stone-100 border rounded text-xs font-mono text-stone-700">Tab</kbd> 鍵可快速跳格！</p>
         </div>
         <button onclick="closeBatchEditModal()" class="text-stone-400 hover:text-stone-600 text-xl font-bold">✕</button>
@@ -1071,7 +1071,7 @@
         const row = document.createElement('div');
         row.className = "py-4 lg:grid lg:grid-cols-12 lg:gap-3 flex flex-col items-start lg:items-center group hover:bg-stone-50/80 px-3 rounded-2xl transition text-base sm:text-lg";
 
-        // 🌟 更新狀態配色 (已完成綠色、閱讀中黃色、未讀紅色)
+        // 🌟 配色：已完成綠色、閱讀中黃色、未讀紅色
         let statusBadge = "bg-stone-100 text-stone-700";
         if (item.status === '未讀' || item.status === '待看') statusBadge = "bg-red-50 text-red-700 border border-red-200 font-bold";
         else if (item.status === '閱讀中' || item.status === '追更中') statusBadge = "bg-amber-50 text-amber-700 border border-amber-200 font-bold";
@@ -1588,7 +1588,7 @@
       alert(`已成功刪除 ${count} 本書籍！`);
     }
 
-    // --- 批次管理與編輯視窗 ---
+    // --- 批次管理與編輯視窗 (已加入 Status 欄位) ---
     function openBatchEditModal(onlySelected = false) {
       document.getElementById('batchFilterMissingAuthor').checked = false;
       document.getElementById('batchFilterOnlySelected').checked = onlySelected;
@@ -1645,6 +1645,7 @@
       const isBooks = currentTab === 'books';
       const items = getCurrentData();
       const genres = getCurrentGenres();
+      const statuses = isBooks ? ['未讀', '閱讀中', '已讀'] : ['待看', '追更中', '已完結', '暫停'];
 
       let targetList = items.map(item => {
         const parsed = parseTitleAndAuthor(item.title);
@@ -1653,7 +1654,8 @@
           pureTitle: parsed.pureTitle,
           author: parsed.author,
           genre: item.genre,
-          format: item.format || item.episode || '電子書'
+          format: item.format || item.episode || '電子書',
+          status: item.status
         };
       });
 
@@ -1673,10 +1675,11 @@
       thead.className = "px-4 py-3 bg-stone-100 text-sm font-bold text-stone-600 grid grid-cols-12 gap-2 border-b";
       thead.innerHTML = `
         <div class="col-span-1">#</div>
-        <div class="col-span-4">Title</div>
-        <div class="col-span-3">Author</div>
+        <div class="col-span-3">Title</div>
+        <div class="col-span-2">Author</div>
         <div class="col-span-2">Genre</div>
         <div class="col-span-2">${isBooks ? 'Format' : 'Episode'}</div>
+        <div class="col-span-2">Status</div>
       `;
       container.appendChild(thead);
 
@@ -1685,10 +1688,12 @@
         row.className = "px-4 py-3 grid grid-cols-12 gap-2 items-center hover:bg-stone-50/80 transition text-base";
 
         const genreOptions = genres.map(g => `<option value="${g}" ${item.genre === g ? 'selected' : ''}>${g}</option>`).join('');
+        const statusOptions = statuses.map(s => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${s}</option>`).join('');
+
         const formatControl = isBooks
           ? `
-            <select data-book-id="${item.id}" class="batch-edit-format w-full px-3 py-2 border rounded-xl text-base bg-white font-medium">
-              <option value="電子書" ${item.format === '電子書' ? 'selected' : ''}>📱 電子書</option>
+            <select data-book-id="${item.id}" class="batch-edit-format w-full px-2.5 py-2 border rounded-xl text-base bg-white font-medium">
+              <option value="電子书" ${item.format === '電子書' ? 'selected' : ''}>📱 電子書</option>
               <option value="實體書" ${item.format === '實體書' ? 'selected' : ''}>📖 實體書</option>
             </select>`
           : `
@@ -1696,19 +1701,24 @@
 
         row.innerHTML = `
           <div class="col-span-1 text-sm font-mono text-stone-400 font-bold">#${index + 1}</div>
-          <div class="col-span-4">
+          <div class="col-span-3">
             <input type="text" data-book-id="${item.id}" value="${item.pureTitle}" placeholder="書名..." class="batch-edit-title w-full px-3.5 py-2 border rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-amber-500">
           </div>
-          <div class="col-span-3">
+          <div class="col-span-2">
             <input type="text" data-book-id="${item.id}" value="${item.author}" placeholder="作者..." class="batch-edit-author w-full px-3.5 py-2 border rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
           </div>
           <div class="col-span-2">
-            <select data-book-id="${item.id}" class="batch-edit-genre w-full px-3 py-2 border rounded-xl text-base bg-white font-medium">
+            <select data-book-id="${item.id}" class="batch-edit-genre w-full px-2.5 py-2 border rounded-xl text-base bg-white font-medium">
               ${genreOptions}
             </select>
           </div>
           <div class="col-span-2">
             ${formatControl}
+          </div>
+          <div class="col-span-2">
+            <select data-book-id="${item.id}" class="batch-edit-status w-full px-2.5 py-2 border rounded-xl text-base bg-white font-bold">
+              ${statusOptions}
+            </select>
           </div>
         `;
         container.appendChild(row);
@@ -1720,6 +1730,7 @@
       const authorInputs = document.querySelectorAll('.batch-edit-author');
       const genreSelects = document.querySelectorAll('.batch-edit-genre');
       const formatControls = document.querySelectorAll('.batch-edit-format');
+      const statusSelects = document.querySelectorAll('.batch-edit-status');
 
       const isBooks = currentTab === 'books';
       const changeMap = new Map();
@@ -1750,12 +1761,19 @@
         }
       });
 
+      statusSelects.forEach(sel => {
+        const id = Number(sel.getAttribute('data-book-id'));
+        if (changeMap.has(id)) {
+          changeMap.get(id).status = sel.value;
+        }
+      });
+
       if (isBooks) {
         books = books.map(b => {
           if (changeMap.has(b.id)) {
             const data = changeMap.get(b.id);
             const fullTitle = data.author ? `${data.pureTitle} - ${data.author}` : data.pureTitle;
-            return { ...b, title: fullTitle, genre: data.genre, format: data.format };
+            return { ...b, title: fullTitle, genre: data.genre, format: data.format, status: data.status };
           }
           return b;
         });
@@ -1764,7 +1782,7 @@
           if (changeMap.has(c.id)) {
             const data = changeMap.get(c.id);
             const fullTitle = data.author ? `${data.pureTitle} - ${data.author}` : data.pureTitle;
-            return { ...c, title: fullTitle, genre: data.genre, episode: data.format };
+            return { ...c, title: fullTitle, genre: data.genre, episode: data.format, status: data.status };
           }
           return c;
         });
@@ -1772,7 +1790,7 @@
 
       saveStorage();
       closeBatchEditModal();
-      alert('🎉 批次書籍資訊已全部儲存完畢！');
+      alert('🎉 批次書籍資訊與狀態已全部儲存完畢！');
     }
 
     // --- 批次匯入 ---
@@ -2295,7 +2313,7 @@
     // --- 備份與還原 ---
     function exportData() {
       const fullBackup = {
-        version: "18.8",
+        version: "18.9",
         date: new Date().toISOString(),
         books,
         bookGenres,
